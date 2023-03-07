@@ -89,7 +89,7 @@ where
 				let block = self
 					.client
 					.runtime_api()
-					.current_block(&BlockId::Hash(hash));
+					.current_block(hash);
 				if let Ok(Some(block)) = block {
 					block.header.gas_limit
 				} else {
@@ -152,7 +152,7 @@ where
 		let api_version = match self
 			.client
 			.runtime_api()
-			.api_version::<dyn ConvertTransactionRuntimeApi<B>>(&block_hash)
+			.api_version::<dyn ConvertTransactionRuntimeApi<B>>(self.client.info().best_hash)
 		{
 			Ok(api_version) => api_version,
 			_ => return Err(internal_err("cannot access runtime api")),
@@ -162,7 +162,7 @@ where
 			Some(2) => match self
 				.client
 				.runtime_api()
-				.convert_transaction(&block_hash, transaction)
+				.convert_transaction(self.client.info().best_hash, transaction)
 			{
 				Ok(extrinsic) => extrinsic,
 				Err(_) => return Err(internal_err("cannot access runtime api")),
@@ -174,7 +174,7 @@ where
 					match self
 						.client
 						.runtime_api()
-						.convert_transaction_before_version_2(&block_hash, legacy_transaction)
+						.convert_transaction_before_version_2(self.client.info().best_hash, legacy_transaction)
 					{
 						Ok(extrinsic) => extrinsic,
 						Err(_) => return Err(internal_err("cannot access runtime api")),
@@ -223,7 +223,7 @@ where
 		let api_version = match self
 			.client
 			.runtime_api()
-			.api_version::<dyn ConvertTransactionRuntimeApi<B>>(&block_hash)
+			.api_version::<dyn ConvertTransactionRuntimeApi<B>>(self.client.info().best_hash)
 		{
 			Ok(api_version) => api_version,
 			_ => return Err(internal_err("cannot access runtime api")),
@@ -233,7 +233,7 @@ where
 			Some(2) => match self
 				.client
 				.runtime_api()
-				.convert_transaction(&block_hash, transaction)
+				.convert_transaction(self.client.info().best_hash, transaction)
 			{
 				Ok(extrinsic) => extrinsic,
 				Err(_) => return Err(internal_err("cannot access runtime api")),
@@ -245,7 +245,7 @@ where
 					match self
 						.client
 						.runtime_api()
-						.convert_transaction_before_version_2(&block_hash, legacy_transaction)
+						.convert_transaction_before_version_2(self.client.info().best_hash, legacy_transaction)
 					{
 						Ok(extrinsic) => extrinsic,
 						Err(_) => {

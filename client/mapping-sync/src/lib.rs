@@ -29,7 +29,6 @@ use sc_client_api::backend::{Backend, StorageProvider};
 use sp_api::{ApiExt, ProvideRuntimeApi};
 use sp_blockchain::{Backend as _, HeaderBackend};
 use sp_runtime::{
-	generic::BlockId,
 	traits::{Block as BlockT, Header as HeaderT, Zero},
 };
 // Frontier
@@ -118,23 +117,21 @@ where
 	C: ProvideRuntimeApi<Block>,
 	C::Api: EthereumRuntimeRPCApi<Block>,
 {
-	let id = BlockId::Hash(header.hash());
-
 	if let Some(api_version) = client
 		.runtime_api()
-		.api_version::<dyn EthereumRuntimeRPCApi<Block>>(&id)
+		.api_version::<dyn EthereumRuntimeRPCApi<Block>>(header.hash())
 		.map_err(|e| format!("{:?}", e))?
 	{
 		let block = if api_version > 1 {
 			client
 				.runtime_api()
-				.current_block(&id)
+				.current_block(header.hash())
 				.map_err(|e| format!("{:?}", e))?
 		} else {
 			#[allow(deprecated)]
 			let legacy_block = client
 				.runtime_api()
-				.current_block_before_version_2(&id)
+				.current_block_before_version_2(header.hash())
 				.map_err(|e| format!("{:?}", e))?;
 			legacy_block.map(|block| block.into())
 		};

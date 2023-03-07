@@ -25,7 +25,6 @@ use sc_transaction_pool::ChainApi;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{
-	generic::BlockId,
 	traits::{Block as BlockT, UniqueSaturatedInto},
 };
 // Frontier
@@ -43,11 +42,11 @@ where
 	BE: Backend<B> + 'static,
 {
 	pub fn gas_price(&self) -> Result<U256> {
-		let block = BlockId::Hash(self.client.info().best_hash);
+		//let block = BlockId::Hash(self.client.info().best_hash);
 
 		self.client
 			.runtime_api()
-			.gas_price(&block)
+			.gas_price(self.client.info().best_hash)
 			.map_err(|err| internal_err(format!("fetch runtime chain id failed: {:?}", err)))
 	}
 

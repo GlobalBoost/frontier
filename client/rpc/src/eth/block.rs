@@ -27,7 +27,7 @@ use sc_transaction_pool::ChainApi;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::hashing::keccak_256;
-use sp_runtime::{generic::BlockId, traits::Block as BlockT};
+use sp_runtime::{traits::Block as BlockT};
 // Frontier
 use fc_rpc_core::types::*;
 use fp_rpc::EthereumRuntimeRPCApi;
@@ -70,7 +70,7 @@ where
 
 		let base_fee = client
 			.runtime_api()
-			.gas_price(&BlockId::Hash(substrate_hash))
+			.gas_price(substrate_hash)
 			.unwrap_or_default();
 
 		match (block, statuses) {
@@ -113,7 +113,7 @@ where
 			.current_transaction_statuses(schema, substrate_hash)
 			.await;
 
-		let base_fee = client.runtime_api().gas_price(&id).unwrap_or_default();
+		let base_fee = client.runtime_api().gas_price(substrate_hash).unwrap_or_default();
 
 		match (block, statuses) {
 			(Some(block), Some(statuses)) => {

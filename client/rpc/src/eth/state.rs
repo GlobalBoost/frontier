@@ -27,7 +27,7 @@ use sc_transaction_pool_api::{InPoolTransaction, TransactionPool};
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder as BlockBuilderApi;
 use sp_blockchain::HeaderBackend;
-use sp_runtime::{generic::BlockId, traits::Block as BlockT};
+use sp_runtime::{traits::Block as BlockT};
 // Frontier
 use fc_rpc_core::types::*;
 use fp_rpc::EthereumRuntimeRPCApi;
@@ -52,7 +52,7 @@ where
 		if number == BlockNumber::Pending {
 			let api = pending_runtime_api(self.client.as_ref(), self.graph.as_ref())?;
 			Ok(api
-				.account_basic(&BlockId::Hash(self.client.info().best_hash), address)
+				.account_basic(self.client.info().best_hash, address)
 				.map_err(|err| internal_err(format!("fetch runtime chain id failed: {:?}", err)))?
 				.balance)
 		} else if let Ok(Some(id)) = frontier_backend_client::native_block_id::<B, C>(
@@ -63,7 +63,10 @@ where
 			Ok(self
 				.client
 				.runtime_api()
-				.account_basic(&id, address)
+				.account_basic(self
+					.client
+					.expect_block_hash_from_id(&id)
+					.map_err(|_| internal_err(format!("Expect block number from id: {}", id)))?, address)
 				.map_err(|err| internal_err(format!("fetch runtime chain id failed: {:?}", err)))?
 				.balance)
 		} else {
@@ -81,7 +84,7 @@ where
 		if number == BlockNumber::Pending {
 			let api = pending_runtime_api(self.client.as_ref(), self.graph.as_ref())?;
 			Ok(api
-				.storage_at(&BlockId::Hash(self.client.info().best_hash), address, index)
+				.storage_at(self.client.info().best_hash, address, index)
 				.unwrap_or_default())
 		} else if let Ok(Some(id)) = frontier_backend_client::native_block_id::<B, C>(
 			self.client.as_ref(),
@@ -107,12 +110,12 @@ where
 
 	pub fn transaction_count(&self, address: H160, number: Option<BlockNumber>) -> Result<U256> {
 		if let Some(BlockNumber::Pending) = number {
-			let block = BlockId::Hash(self.client.info().best_hash);
+			//let block = BlockId::Hash(self.client.info().best_hash);
 
 			let nonce = self
 				.client
 				.runtime_api()
-				.account_basic(&block, address)
+				.account_basic(self.client.info().best_hash, address)
 				.map_err(|err| {
 					internal_err(format!("fetch runtime account basic failed: {:?}", err))
 				})?
@@ -144,7 +147,10 @@ where
 		Ok(self
 			.client
 			.runtime_api()
-			.account_basic(&id, address)
+			.account_basic(self
+				.client
+				.expect_block_hash_from_id(&id)
+				.map_err(|_| internal_err(format!("Expect block number from id: {}", id)))?, address)
 			.map_err(|err| internal_err(format!("fetch runtime account basic failed: {:?}", err)))?
 			.nonce)
 	}
@@ -154,7 +160,7 @@ where
 		if number == BlockNumber::Pending {
 			let api = pending_runtime_api(self.client.as_ref(), self.graph.as_ref())?;
 			Ok(api
-				.account_code_at(&BlockId::Hash(self.client.info().best_hash), address)
+				.account_code_at(self.client.info().best_hash, address)
 				.unwrap_or_default()
 				.into())
 		} else if let Ok(Some(id)) = frontier_backend_client::native_block_id::<B, C>(

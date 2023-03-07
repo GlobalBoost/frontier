@@ -37,7 +37,6 @@ use sc_service::SpawnTaskHandle;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{
-	generic::BlockId,
 	traits::{Block as BlockT, Header as HeaderT, UniqueSaturatedInto},
 };
 // Frontier
@@ -339,7 +338,7 @@ where
 
 			let block = handler.current_block(hash);
 			let mut block_number: Option<u64> = None;
-			let base_fee = client.runtime_api().gas_price(&BlockId::Hash(hash)).unwrap_or_default();
+			let base_fee = client.runtime_api().gas_price(hash).unwrap_or_default();
 			let receipts = handler.current_receipts(hash);
 			let mut result = FeeHistoryCacheItem {
 				base_fee: if base_fee > U256::from(u64::MAX) { u64::MAX } else { base_fee.low_u64() },

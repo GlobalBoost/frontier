@@ -107,6 +107,11 @@ where
 			}
 		};
 
+		let best_hash = self
+						.client
+						.expect_block_hash_from_id(&id)
+						.map_err(|_| internal_err(format!("Expect block number from id: {}", id)))?;
+
 		if let Err(sp_blockchain::Error::UnknownBlock(_)) =
 			self.client.expect_block_hash_from_id(&id)
 		{
@@ -114,19 +119,19 @@ where
 		}
 
 		let api_version =
-			if let Ok(Some(api_version)) = api.api_version::<dyn EthereumRuntimeRPCApi<B>>(&id) {
+			if let Ok(Some(api_version)) = api.api_version::<dyn EthereumRuntimeRPCApi<B>>(best_hash) {
 				api_version
 			} else {
 				return Err(internal_err("failed to retrieve Runtime Api version"));
 			};
 
 		let block = if api_version > 1 {
-			api.current_block(&id)
+			api.current_block(best_hash)
 				.map_err(|err| internal_err(format!("runtime error: {:?}", err)))?
 		} else {
 			#[allow(deprecated)]
 			let legacy_block = api
-				.current_block_before_version_2(&id)
+				.current_block_before_version_2(best_hash)
 				.map_err(|err| internal_err(format!("runtime error: {:?}", err)))?;
 			legacy_block.map(|block| block.into())
 		};
@@ -150,7 +155,7 @@ where
 			}
 			// If gas limit is not specified in the request we either use the multiplier if supported
 			// or fallback to the block gas limit.
-			None => match api.gas_limit_multiplier_support(&id) {
+			None => match api.gas_limit_multiplier_support(best_hash) {
 				Ok(_) => max_gas_limit,
 				_ => block_gas_limit,
 			},
@@ -163,7 +168,7 @@ where
 					// Legacy pre-london
 					#[allow(deprecated)]
 					let info = api.call_before_version_2(
-						&id,
+						best_hash,
 						from.unwrap_or_default(),
 						to,
 						data,
@@ -182,7 +187,7 @@ where
 					// Post-london
 					#[allow(deprecated)]
 					let info = api.call_before_version_4(
-						&id,
+						best_hash,
 						from.unwrap_or_default(),
 						to,
 						data,
@@ -203,7 +208,7 @@ where
 					let access_list = access_list.unwrap_or_default();
 					let info = api
 						.call(
-							&id,
+							best_hash,
 							from.unwrap_or_default(),
 							to,
 							data,
@@ -234,7 +239,7 @@ where
 					// Legacy pre-london
 					#[allow(deprecated)]
 					let info = api.create_before_version_2(
-						&id,
+						best_hash,
 						from.unwrap_or_default(),
 						data,
 						value.unwrap_or_default(),
@@ -249,14 +254,14 @@ where
 					error_on_execution_failure(&info.exit_reason, &[])?;
 
 					let code = api
-						.account_code_at(&id, info.value)
+						.account_code_at(best_hash, info.value)
 						.map_err(|err| internal_err(format!("runtime error: {:?}", err)))?;
 					Ok(Bytes(code))
 				} else if api_version >= 2 && api_version < 4 {
 					// Post-london
 					#[allow(deprecated)]
 					let info = api.create_before_version_4(
-						&id,
+						best_hash,
 						from.unwrap_or_default(),
 						data,
 						value.unwrap_or_default(),
@@ -272,7 +277,7 @@ where
 					error_on_execution_failure(&info.exit_reason, &[])?;
 
 					let code = api
-						.account_code_at(&id, info.value)
+						.account_code_at(best_hash, info.value)
 						.map_err(|err| internal_err(format!("runtime error: {:?}", err)))?;
 					Ok(Bytes(code))
 				} else if api_version == 4 {
@@ -280,7 +285,7 @@ where
 					let access_list = access_list.unwrap_or_default();
 					let info = api
 						.create(
-							&id,
+							best_hash,
 							from.unwrap_or_default(),
 							data,
 							value.unwrap_or_default(),
@@ -302,7 +307,10 @@ where
 					error_on_execution_failure(&info.exit_reason, &[])?;
 
 					let code = api
-						.account_code_at(&id, info.value)
+						.account_code_at(self
+							.client
+							.expect_block_hash_from_id(&id)
+							.map_err(|_| internal_err(format!("Expect block number from id: {}", id)))?, info.value)
 						.map_err(|err| internal_err(format!("runtime error: {:?}", err)))?;
 					Ok(Bytes(code))
 				} else {
@@ -321,7 +329,6 @@ where
 
 		// Get best hash (TODO missing support for estimating gas historically)
 		let substrate_hash = client.info().best_hash;
-		let id = BlockId::Hash(substrate_hash);
 
 		// Adapt request for gas estimation.
 		let request = EGA::adapt_request(request);
@@ -335,7 +342,7 @@ where
 			if let Some(to) = request.to {
 				let to_code = client
 					.runtime_api()
-					.account_code_at(&id, to)
+					.account_code_at(substrate_hash, to)
 					.map_err(|err| internal_err(format!("runtime error: {:?}", err)))?;
 				if to_code.is_empty() {
 					return Ok(MIN_GAS_PER_TX);
@@ -382,7 +389,7 @@ where
 			}
 			// If gas limit is not specified in the request we either use the multiplier if supported
 			// or fallback to the block gas limit.
-			None => match api.gas_limit_multiplier_support(&id) {
+			None => match api.gas_limit_multiplier_support(substrate_hash) {
 				Ok(_) => max_gas_limit,
 				_ => block_gas_limit,
 			},
@@ -393,7 +400,7 @@ where
 			let gas_price = gas_price.unwrap_or_default();
 			if gas_price > U256::zero() {
 				let balance = api
-					.account_basic(&id, from)
+					.account_basic(substrate_hash, from)
 					.map_err(|err| internal_err(format!("runtime error: {:?}", err)))?
 					.balance;
 				let mut available = balance;
@@ -461,7 +468,7 @@ where
 							// Legacy pre-london
 							#[allow(deprecated)]
 							api.call_before_version_2(
-								&id,
+								substrate_hash,
 								from.unwrap_or_default(),
 								to,
 								data,
@@ -477,7 +484,7 @@ where
 							// Post-london
 							#[allow(deprecated)]
 							api.call_before_version_4(
-								&id,
+								substrate_hash,
 								from.unwrap_or_default(),
 								to,
 								data,
@@ -494,7 +501,7 @@ where
 							// Post-london + access list support
 							let access_list = access_list.unwrap_or_default();
 							api.call(
-								&id,
+								substrate_hash,
 								from.unwrap_or_default(),
 								to,
 								data,
@@ -522,7 +529,7 @@ where
 							// Legacy pre-london
 							#[allow(deprecated)]
 							api.create_before_version_2(
-								&id,
+								substrate_hash,
 								from.unwrap_or_default(),
 								data,
 								value.unwrap_or_default(),
@@ -537,7 +544,7 @@ where
 							// Post-london
 							#[allow(deprecated)]
 							api.create_before_version_4(
-								&id,
+								substrate_hash,
 								from.unwrap_or_default(),
 								data,
 								value.unwrap_or_default(),
@@ -553,7 +560,7 @@ where
 							// Post-london + access list support
 							let access_list = access_list.unwrap_or_default();
 							api.create(
-								&id,
+								substrate_hash,
 								from.unwrap_or_default(),
 								data,
 								value.unwrap_or_default(),
@@ -585,7 +592,7 @@ where
 		let api_version = if let Ok(Some(api_version)) =
 			client
 				.runtime_api()
-				.api_version::<dyn EthereumRuntimeRPCApi<B>>(&id)
+				.api_version::<dyn EthereumRuntimeRPCApi<B>>(substrate_hash)
 		{
 			api_version
 		} else {

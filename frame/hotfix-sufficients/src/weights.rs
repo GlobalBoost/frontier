@@ -59,9 +59,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Events (r:1 w:1)
 	/// The range of component `n` is `[0, 1000]`.
 	fn hotfix_inc_account_sufficients(n: u32, ) -> Weight {
-		Weight::from_ref_time(3_798_000 as u64)
+		Weight::from_parts(3_798_000 as u64, 0)
 			// Standard Error: 7_576
-			.saturating_add(Weight::from_ref_time(12_811_127 as u64).saturating_mul(n as u64))
+			.saturating_add(Weight::from_parts(12_811_127 as u64, 0).saturating_mul(n as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(n as u64)))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(n as u64)))
 	}
@@ -76,9 +76,9 @@ impl WeightInfo for () {
 	// Storage: System Events (r:1 w:1)
 	/// The range of component `n` is `[0, 1000]`.
 	fn hotfix_inc_account_sufficients(n: u32, ) -> Weight {
-		Weight::from_ref_time(3_798_000 as u64)
+		Weight::from_parts(3_798_000 as u64, 0)
 			// Standard Error: 7_576
-			.saturating_add(Weight::from_ref_time(12_811_127 as u64).saturating_mul(n as u64))
+			.saturating_add(Weight::from_parts(12_811_127 as u64, 0).saturating_mul(n as u64))
 			.saturating_add(RocksDbWeight::get().reads((1 as u64).saturating_mul(n as u64)))
 			.saturating_add(RocksDbWeight::get().writes((1 as u64).saturating_mul(n as u64)))
 	}

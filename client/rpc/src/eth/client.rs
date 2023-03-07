@@ -26,7 +26,6 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle;
 use sp_runtime::{
-	generic::BlockId,
 	traits::{Block as BlockT, UniqueSaturatedInto},
 };
 // Frontier
@@ -101,7 +100,7 @@ where
 		Ok(Some(
 			self.client
 				.runtime_api()
-				.chain_id(&BlockId::Hash(hash))
+				.chain_id(hash)
 				.map_err(|err| internal_err(format!("fetch runtime chain id failed: {:?}", err)))?
 				.into(),
 		))
