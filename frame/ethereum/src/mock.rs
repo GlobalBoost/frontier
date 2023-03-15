@@ -171,14 +171,9 @@ impl pallet_evm::Config for Test {
 	type FindAuthor = FindAuthorTruncated;
 }
 
-parameter_types! {
-	pub const PostBlockAndTxnHashes: PostLogContent = PostLogContent::BlockAndTxnHashes;
-}
-
 impl Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type StateRoot = IntermediateStateRoot<Self>;
-	type PostLogContent = PostBlockAndTxnHashes;
 }
 
 impl fp_self_contained::SelfContainedCall for RuntimeCall {

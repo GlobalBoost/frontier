@@ -37,6 +37,7 @@ use jsonrpsee::core::{async_trait, RpcResult as Result};
 use sc_client_api::backend::{Backend, StorageProvider};
 use sc_network::NetworkService;
 use sc_network_common::ExHashT;
+use sc_network_sync::SyncingService;
 use sc_transaction_pool::{ChainApi, Pool};
 use sc_transaction_pool_api::{InPoolTransaction, TransactionPool};
 use sp_api::{Core, HeaderT, ProvideRuntimeApi};
@@ -66,6 +67,7 @@ pub struct Eth<B: BlockT, C, P, CT, BE, H: ExHashT, A: ChainApi, EGA = ()> {
 	client: Arc<C>,
 	convert_transaction: Option<CT>,
 	network: Arc<NetworkService<B, H>>,
+	sync: Arc<SyncingService<B>>,
 	is_authority: bool,
 	signers: Vec<Box<dyn EthSigner>>,
 	overrides: Arc<OverrideHandle<B>>,
@@ -86,6 +88,7 @@ impl<B: BlockT, C, P, CT, BE, H: ExHashT, A: ChainApi> Eth<B, C, P, CT, BE, H, A
 		graph: Arc<Pool<A>>,
 		convert_transaction: Option<CT>,
 		network: Arc<NetworkService<B, H>>,
+		sync: Arc<SyncingService<B>>,
 		signers: Vec<Box<dyn EthSigner>>,
 		overrides: Arc<OverrideHandle<B>>,
 		backend: Arc<fc_db::Backend<B>>,
@@ -101,6 +104,7 @@ impl<B: BlockT, C, P, CT, BE, H: ExHashT, A: ChainApi> Eth<B, C, P, CT, BE, H, A
 			graph,
 			convert_transaction,
 			network,
+			sync,
 			is_authority,
 			signers,
 			overrides,
@@ -124,6 +128,7 @@ impl<B: BlockT, C, P, CT, BE, H: ExHashT, A: ChainApi, EGA> Eth<B, C, P, CT, BE,
 			graph,
 			convert_transaction,
 			network,
+			sync,
 			is_authority,
 			signers,
 			overrides,
@@ -141,6 +146,7 @@ impl<B: BlockT, C, P, CT, BE, H: ExHashT, A: ChainApi, EGA> Eth<B, C, P, CT, BE,
 			graph,
 			convert_transaction,
 			network,
+			sync,
 			is_authority,
 			signers,
 			overrides,

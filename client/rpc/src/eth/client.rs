@@ -45,7 +45,7 @@ where
 	}
 
 	pub fn syncing(&self) -> Result<SyncStatus> {
-		if self.network.is_major_syncing() {
+		if self.sync.is_major_syncing() {
 			let block_number = U256::from(UniqueSaturatedInto::<u128>::unique_saturated_into(
 				self.client.info().best_number,
 			));

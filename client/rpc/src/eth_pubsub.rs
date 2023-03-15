@@ -27,8 +27,9 @@ use sc_client_api::{
 	backend::{Backend, StorageProvider},
 	client::BlockchainEvents,
 };
-use sc_network::{NetworkService, NetworkStatusProvider};
+use sc_network::NetworkService;
 use sc_network_common::ExHashT;
+use sc_network_sync::SyncingService;
 use sc_rpc::SubscriptionTaskExecutor;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::{ApiExt, ProvideRuntimeApi};
@@ -61,6 +62,7 @@ pub struct EthPubSub<B: BlockT, P, C, BE, H: ExHashT> {
 	pool: Arc<P>,
 	client: Arc<C>,
 	network: Arc<NetworkService<B, H>>,
+	sync: Arc<SyncingService<B>>,
 	subscriptions: SubscriptionTaskExecutor,
 	overrides: Arc<OverrideHandle<B>>,
 	starting_block: u64,
@@ -75,6 +77,7 @@ where
 		pool: Arc<P>,
 		client: Arc<C>,
 		network: Arc<NetworkService<B, H>>,
+		sync: Arc<SyncingService<B>>,
 		subscriptions: SubscriptionTaskExecutor,
 		overrides: Arc<OverrideHandle<B>>,
 	) -> Self {
@@ -85,6 +88,7 @@ where
 			pool,
 			client,
 			network,
+			sync,
 			subscriptions,
 			overrides,
 			starting_block,
@@ -219,6 +223,7 @@ where
 		let client = self.client.clone();
 		let pool = self.pool.clone();
 		let network = self.network.clone();
+		let sync = self.sync.clone();
 		let overrides = self.overrides.clone();
 		let starting_block = self.starting_block;
 		let fut = async move {
@@ -292,12 +297,11 @@ where
 						.import_notification_stream()
 						.filter_map(move |txhash| {
 							if let Some(xt) = pool.ready_transaction(&txhash) {
-								let best_block = client.info().best_hash;
 
 								let api = client.runtime_api();
 
 								let api_version = if let Ok(Some(api_version)) =
-									api.api_version::<dyn EthereumRuntimeRPCApi<B>>(best_block)
+									api.api_version::<dyn EthereumRuntimeRPCApi<B>>(client.info().best_hash)
 								{
 									api_version
 								} else {
@@ -307,11 +311,11 @@ where
 								let xts = vec![xt.data().clone()];
 
 								let txs: Option<Vec<EthereumTransaction>> = if api_version > 1 {
-									api.extrinsic_filter(best_block, xts).ok()
+									api.extrinsic_filter(client.info().best_hash, xts).ok()
 								} else {
 									#[allow(deprecated)]
 									if let Ok(legacy) =
-										api.extrinsic_filter_before_version_2(best_block, xts)
+										api.extrinsic_filter_before_version_2(client.info().best_hash, xts)
 									{
 										Some(legacy.into_iter().map(|tx| tx.into()).collect())
 									} else {
@@ -340,20 +344,22 @@ where
 				Kind::Syncing => {
 					let client = Arc::clone(&client);
 					let network = Arc::clone(&network);
+					let sync = Arc::clone(&sync);
 					// Gets the node syncing status.
 					// The response is expected to be serialized either as a plain boolean
 					// if the node is not syncing, or a structure containing syncing metadata
 					// in case it is.
 					async fn status<C: HeaderBackend<B>, B: BlockT, H: ExHashT + Send + Sync>(
 						client: Arc<C>,
-						network: Arc<NetworkService<B, H>>,
+						_network: Arc<NetworkService<B, H>>,
+						sync: Arc<SyncingService<B>>,
 						starting_block: u64,
 					) -> PubSubSyncStatus {
-						if network.is_major_syncing() {
+						if sync.is_major_syncing() {
 							// Get the target block to sync.
 							// This value is only exposed through substrate async Api
 							// in the `NetworkService`.
-							let highest_block = network
+							let highest_block = sync
 								.status()
 								.await
 								.ok()
@@ -378,7 +384,7 @@ where
 					// Because import notifications are only emitted when the node is synced or
 					// in case of reorg, the first event is emited right away.
 					let _ = sink.send(&PubSubResult::SyncState(
-						status(Arc::clone(&client), Arc::clone(&network), starting_block).await,
+						status(Arc::clone(&client), Arc::clone(&network), Arc::clone(&sync), starting_block).await,
 					));
 
 					// When the node is not under a major syncing (i.e. from genesis), react
@@ -386,12 +392,12 @@ where
 					//
 					// Only send new notifications down the pipe when the syncing status changed.
 					let mut stream = client.clone().import_notification_stream();
-					let mut last_syncing_status = network.is_major_syncing();
+					let mut last_syncing_status = sync.is_major_syncing();
 					while (stream.next().await).is_some() {
-						let syncing_status = network.is_major_syncing();
+						let syncing_status = sync.is_major_syncing();
 						if syncing_status != last_syncing_status {
 							let _ = sink.send(&PubSubResult::SyncState(
-								status(client.clone(), network.clone(), starting_block).await,
+								status(client.clone(), network.clone(), sync.clone(), starting_block).await,
 							));
 						}
 						last_syncing_status = syncing_status;
