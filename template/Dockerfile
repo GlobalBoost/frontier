@@ -15,7 +15,7 @@ RUN apt-get update -y && \
 RUN rustup target add wasm32-unknown-unknown
 
 # Download Frontier repo
-RUN git clone https://github.com/paritytech/frontier /frontier
+RUN git clone https://github.com/GlobalBoost/frontier /frontier
 RUN cd /frontier && git submodule init && git submodule update
 
 # Download rust dependencies and build the rust binary

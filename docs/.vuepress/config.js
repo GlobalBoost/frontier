@@ -10,7 +10,7 @@ module.exports = {
   ],
 
   themeConfig: {
-    repo: 'https://github.com/paritytech/frontier',
+    repo: 'https://github.com/GlobalBoost/frontier',
     editLinks: false,
     docsDir: 'docs',
     editLinkText: '',

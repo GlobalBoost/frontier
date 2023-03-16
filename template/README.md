@@ -7,9 +7,9 @@ A [FRAME](https://docs.substrate.io/v3/runtime/frame)-based
 ## Generation & Upstream
 
 This template is maintained in the
-[Frontier](https://github.com/paritytech/frontier/tree/master/template) project repository, and can
+[Frontier](https://github.com/GlobalBoost/frontier/tree/master/template) project repository, and can
 be used to generate a stand-alone template for use in an independent project via the included
-[template generation script](https://github.com/paritytech/frontier/blob/master/docs/node-template-release.md).
+[template generation script](https://github.com/GlobalBoost/frontier/blob/master/docs/node-template-release.md).
 
 A ready-to-use template generated this way is hosted for each Frontier release on the
 [substrate-developer-hub/frontier-node-template](https://github.com/substrate-developer-hub/frontier-node-template)

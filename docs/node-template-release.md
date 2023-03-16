@@ -1,14 +1,14 @@
 # Frontier Node Template Release Process
 
 > NOTE: this based on the
-> [Subtrate node template release process](https://github.com/paritytech/substrate/blob/master/docs/node-template-release.md) -
+> [Subtrate node template release process](https://github.com/GlobalBoost/substrate/blob/master/docs/node-template-release.md) -
 
 1.  Clone and checkout the `main` branch of the
     [Frontier Node Template](https://github.com/substrate-developer-hub/frontier-node-template/).
     Note the path to this directory.
 
 2.  This release process has to be run in a github checkout Frontier directory with your work
-    committed into `https://github.com/paritytech/frontier/`, because the build script will check
+    committed into `https://github.com/GlobalBoost/frontier/`, because the build script will check
     the existence of your current git commit ID in the remote repository.
 
         Assume you are in the root directory of Frontier. Run:
@@ -45,7 +45,7 @@
         ```toml
         [dev-dependencies.sp-core]
         default-features = false
-        git = 'https://github.com/paritytech/substrate.git'
+        git = 'https://github.com/GlobalBoost/substrate.git'
         rev = 'c1fe59d060600a10eebb4ace277af1fee20bad17'
         version = '3.0.0'
         ```

@@ -6,7 +6,7 @@
     "name": "admin@parity.io",
     "email": "Parity Technologies"
   },
-  "repository": "https://github.com/paritytech/frontier",
+  "repository": "https://github.com/GlobalBoost/frontier",
   "scripts": {
     "dev": "vuepress dev .",
     "build": "vuepress build ."
